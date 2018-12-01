@@ -1,5 +1,6 @@
 package com.mohan.gaffaney.bluetoothfiletransfer;
 
+import android.content.Intent;
 import android.support.v4.app.FragmentManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -15,6 +16,9 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         fm = getSupportFragmentManager();
         setContentView(R.layout.activity_main);
-        fm.beginTransaction().replace(R.id.fragment_container, new ShareFragment()).commit();
+
+        ShareFragment shareFragment = new ShareFragment();
+        shareFragment.setArguments(getIntent().getExtras());
+        fm.beginTransaction().replace(R.id.fragment_container, shareFragment).commit();
     }
 }

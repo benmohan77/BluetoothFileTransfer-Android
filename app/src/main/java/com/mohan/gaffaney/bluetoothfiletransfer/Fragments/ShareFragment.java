@@ -1,6 +1,5 @@
 package com.mohan.gaffaney.bluetoothfiletransfer.Fragments;
 
-import android.app.AlertDialog;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.net.Uri;
@@ -19,6 +18,7 @@ import com.mohan.gaffaney.bluetoothfiletransfer.Objects.FileItem;
 import com.mohan.gaffaney.bluetoothfiletransfer.R;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -34,6 +34,13 @@ public class ShareFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState){
         View rootView = inflater.inflate(R.layout.share_fragment, container, false);
+        Bundle args = getArguments();
+        if(args.)
+        try{
+            Uri imageUri = (Uri) args.getParcelable(Intent.EXTRA_STREAM);
+        } catch (Exception e){
+
+        }
         Button button = rootView.findViewById(R.id.select_files_btn);
         list = rootView.findViewById(R.id.image_list);
         button.setOnClickListener(new View.OnClickListener() {
