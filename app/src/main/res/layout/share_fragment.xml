@@ -5,15 +5,25 @@
     android:orientation="vertical"
     android:gravity="center_horizontal|bottom">
 
-    <ListView
-        android:id="@+id/image_list"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
+    <!--<ListView-->
+        <!--android:id="@+id/image_list"-->
+        <!--android:layout_width="match_parent"-->
+        <!--android:layout_height="wrap_content"/>-->
 
+    <ImageView
+        android:id="@+id/share_image"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
     <Button
         android:id="@+id/select_files_btn"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Select Files"/>
+
+    <Button
+        android:id="@+id/share_files_btn"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Share Files"/>
 
 </LinearLayout>
