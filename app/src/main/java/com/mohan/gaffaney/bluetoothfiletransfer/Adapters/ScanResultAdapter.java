@@ -55,7 +55,7 @@ public class ScanResultAdapter extends BaseAdapter {
     }
 
     @Override
-    public Object getItem(int position) {
+    public ScanResult getItem(int position) {
         return mArrayList.get(position);
     }
 
