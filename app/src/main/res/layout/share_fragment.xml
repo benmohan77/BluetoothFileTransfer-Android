@@ -18,12 +18,12 @@
         android:id="@+id/select_files_btn"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Select Files"/>
+        android:text="Select File to Share"/>
 
     <Button
         android:id="@+id/share_files_btn"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Share Files"/>
+        android:text="Scan for Sharing Devices"/>
 
 </LinearLayout>

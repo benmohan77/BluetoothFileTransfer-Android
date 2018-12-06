@@ -4,6 +4,7 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCallback;
 import android.bluetooth.BluetoothGattCharacteristic;
+import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothProfile;
 import android.bluetooth.le.BluetoothLeScanner;
@@ -13,6 +14,8 @@ import android.bluetooth.le.ScanResult;
 import android.bluetooth.le.ScanSettings;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -24,6 +27,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.Toast;
 
@@ -40,6 +44,7 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import static android.content.ContentValues.TAG;
+import static android.graphics.Bitmap.CompressFormat.PNG;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -60,7 +65,8 @@ public class ScannerFragment extends ListFragment {
     private BluetoothGatt mBluetoothGatt;
     private int lastPosition;
     private ByteArrayOutputStream outputStream;
-
+    private ImageView imageView;
+    private String NAME = "BEN";
 
     public ScannerFragment() {
         // Required empty public constructor
@@ -92,7 +98,7 @@ public class ScannerFragment extends ListFragment {
             }
         });
         setListAdapter(mAdapter);
-
+        imageView = view.findViewById(R.id.receive_image);
         // Inflate the layout for this fragment
         return view;
 
@@ -235,23 +241,26 @@ public class ScannerFragment extends ListFragment {
                 } catch (UnsupportedEncodingException e) {
                     e.printStackTrace();
                 }
-            } else if(Constants.Transfer_Characteristic.getUuid().equals(characteristic.getUuid())){
-                try {
-                    String comp = new String(characteristic.getValue(), "UTF-8");
-                    if(!comp.equals(Constants.EOM)){
-                        outputStream.write(characteristic.getValue());
-                    }
-                } catch (UnsupportedEncodingException e) {
-                    e.printStackTrace();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
             }
         }
 
         @Override
         public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic){
             if(characteristic.getUuid().equals(Constants.Transfer_Characteristic)){
+                try{
+                    String comp = new String(characteristic.getValue(), "UTF-8");
+                    if(comp.equals(Constants.EOM)){
+                        byte[] result = outputStream.toByteArray();
+                        Bitmap img = BitmapFactory.decodeByteArray(result, 0, result.length);
+                        imageView.setImageBitmap(img);
+                    } else{
+                        outputStream.write(characteristic.getValue());
+                    }
+                }catch (UnsupportedEncodingException e){
+                    e.printStackTrace();
+                } catch (IOException e){
+                    e.printStackTrace();
+                }
 
             }
         }
@@ -263,12 +272,14 @@ public class ScannerFragment extends ListFragment {
                 BluetoothGattService service = mBluetoothGatt.getService(Constants.Service_UUID.getUuid());
                 if (service != null) {
                     BluetoothGattCharacteristic nameCharacteristic = service.getCharacteristic(Constants.Name_Characteristic.getUuid());
-
-                    mBluetoothGatt.readCharacteristic(nameCharacteristic);
-
+                    nameCharacteristic.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE);
                     BluetoothGattCharacteristic transferCharacteristic = service.getCharacteristic(Constants.Transfer_Characteristic.getUuid());
                     mBluetoothGatt.setCharacteristicNotification(transferCharacteristic, true);
-                    mBluetoothGatt.readCharacteristic(transferCharacteristic);
+                    BluetoothGattDescriptor descriptor = transferCharacteristic.getDescriptor(UUID.fromString("00002902-0000-1000-8000-00805F9B34FB"));
+                    descriptor.setValue(BluetoothGattDescriptor.ENABLE_INDICATION_VALUE);
+                    mBluetoothGatt.writeDescriptor(descriptor);
+                    nameCharacteristic.setValue(NAME.getBytes());
+                    mBluetoothGatt.writeCharacteristic(nameCharacteristic);
                     Log.i(TAG, "Service characteristic UUID found: " + service.getUuid().toString());
                 } else {
                     Log.i(TAG, "Service characteristic not found for UUID: " + Constants.Service_UUID.getUuid());

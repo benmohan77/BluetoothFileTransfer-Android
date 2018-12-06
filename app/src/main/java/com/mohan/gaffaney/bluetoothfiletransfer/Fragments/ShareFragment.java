@@ -233,15 +233,17 @@ public class ShareFragment extends Fragment {
         public void onConnectionStateChange(BluetoothDevice device, int status, int newState) {
             super.onConnectionStateChange(device, status, newState);
             if (newState == BluetoothProfile.STATE_CONNECTED) {
-                Log.e("BLE", "Device Connected");
+                Log.i("BLE", "Device Connected");
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
-                Log.e("BLE", "Device Disconnected");
+                Log.i("BLE", "Device Disconnected");
             }
         }
 
 
         @Override
         public void onCharacteristicWriteRequest(final BluetoothDevice device, int requestId, BluetoothGattCharacteristic characteristic, boolean preparedWrite, boolean responseNeeded, int offset, final byte[] value) {
+            Log.e("BLE", "WRITE REQUESTED FROM CENTRAL");
+            super.onCharacteristicWriteRequest(device, requestId, characteristic, preparedWrite, responseNeeded, offset, value);
             if (Constants.Name_Characteristic.getUuid().equals(characteristic.getUuid())) {
 //                getActivity().runOnUiThread(new Runnable() {
 //                    @Override
@@ -283,7 +285,6 @@ public class ShareFragment extends Fragment {
                     transferCharacteristic.setValue(Constants.EOM.getBytes());
                     mBluetoothGattServer.notifyCharacteristicChanged(device, transferCharacteristic, false);
                 }
-
             }
         }
 
