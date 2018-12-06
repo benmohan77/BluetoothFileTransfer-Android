@@ -67,7 +67,7 @@ public class ScannerFragment extends ListFragment {
     private int lastPosition;
     private ByteArrayOutputStream outputStream;
     private ImageView imageView;
-    private String NAME = "BEN";
+    private String NAME = "Ben";
 
     public ScannerFragment() {
         // Required empty public constructor
