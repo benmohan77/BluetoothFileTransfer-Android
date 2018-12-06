@@ -35,6 +35,7 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.ListView;
+import android.widget.Toast;
 
 import com.mohan.gaffaney.bluetoothfiletransfer.Adapters.FileAdapter;
 import com.mohan.gaffaney.bluetoothfiletransfer.Constants;
@@ -136,12 +137,14 @@ public class ShareFragment extends Fragment {
     private static final String TAG = MainActivity.class.getSimpleName();
     private Bitmap imageToSend;
     private BluetoothGattCharacteristic transferCharacteristic;
+    private BluetoothGattCharacteristic nameCharacteristic;
+
 
 
     private void initGattServer(){
         BluetoothGattService service =new BluetoothGattService(Constants.Service_UUID.getUuid(), BluetoothGattService.SERVICE_TYPE_PRIMARY);
 
-        BluetoothGattCharacteristic nameCharacteristic = new BluetoothGattCharacteristic(
+        nameCharacteristic = new BluetoothGattCharacteristic(
                 Constants.Name_Characteristic.getUuid(),
                 BluetoothGattCharacteristic.PROPERTY_READ | BluetoothGattCharacteristic.PROPERTY_INDICATE |  BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE,
                 BluetoothGattCharacteristic.PERMISSION_READ | BluetoothGattCharacteristic.PERMISSION_WRITE);
@@ -212,15 +215,6 @@ public class ShareFragment extends Fragment {
         this.imageToSend = bitmap;
     }
 
-    public void denyRequest(BluetoothDevice device){
-        transferCharacteristic.setValue(Constants.EOM.getBytes());
-        mBluetoothGattServer.notifyCharacteristicChanged(device, transferCharacteristic, false);
-    }
-
-    public void sendImage(BluetoothDevice device){
-
-    }
-
     private BluetoothGattServerCallback mGattServerCallback = new BluetoothGattServerCallback() {
         int currentIndex;
         byte[] bytesToSend;
@@ -228,6 +222,12 @@ public class ShareFragment extends Fragment {
         byte[] b;
         int finalIndex;
         boolean finalSent = false;
+        boolean needToSendEOM = false;
+
+        @Override
+        public void onServiceAdded(int status, BluetoothGattService service){
+            super.onServiceAdded(status, service);
+        }
 
         @Override
         public void onConnectionStateChange(BluetoothDevice device, int status, int newState) {
@@ -245,30 +245,11 @@ public class ShareFragment extends Fragment {
             Log.e("BLE", "WRITE REQUESTED FROM CENTRAL");
             super.onCharacteristicWriteRequest(device, requestId, characteristic, preparedWrite, responseNeeded, offset, value);
             if (Constants.Name_Characteristic.getUuid().equals(characteristic.getUuid())) {
-//                getActivity().runOnUiThread(new Runnable() {
-//                    @Override
-//                    public void run() {
-//                        AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
-//                        String name = new String(value, StandardCharsets.UTF_8);
-//                        builder.setMessage("Send Image to: " + name + "?").setPositiveButton("Yes", new DialogInterface.OnClickListener() {
-//                            @Override
-//                            public void onClick(DialogInterface dialogInterface, int i) {
-//                                sendImage(device);
-//                            }
-//                        }).setNegativeButton("No", new DialogInterface.OnClickListener() {
-//                            @Override
-//                            public void onClick(DialogInterface dialogInterface, int i) {
-//                                denyRequest(device);
-//                            }
-//                        });
-//                        AlertDialog alertDialog = builder.create();
-//                        alertDialog.show();
-//                    }
-//                });
                 if(imageToSend != null){
                     finalIndex = 0;
                     currentIndex = 0;
                     finalSent = false;
+                    needToSendEOM = false;
                     byteArrayOutputStream = new ByteArrayOutputStream();
                     imageToSend.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream );
                     b = byteArrayOutputStream.toByteArray();
@@ -297,71 +278,18 @@ public class ShareFragment extends Fragment {
                 currentIndex += 20;
                 transferCharacteristic.setValue(bytesToSend);
                 mBluetoothGattServer.notifyCharacteristicChanged(device, transferCharacteristic, true);
-            } else if(finalSent){
+            } else if(!finalSent && needToSendEOM){
                 transferCharacteristic.setValue(Constants.EOM.getBytes());
                 mBluetoothGattServer.notifyCharacteristicChanged(device, transferCharacteristic, false);
-            } else if(currentIndex + 20 >= finalIndex){
+                finalSent = true;
+            } else if(currentIndex + 20 >= finalIndex && !needToSendEOM){
                 byte[] finalBytes = Arrays.copyOfRange(b, currentIndex, finalIndex);
 
                 transferCharacteristic.setValue(finalBytes);
                 mBluetoothGattServer.notifyCharacteristicChanged(device, transferCharacteristic, true);
-                finalSent = true;
+                needToSendEOM = true;
             }
         }
-
-        @Override
-        public void onCharacteristicReadRequest(BluetoothDevice device, int requestId, int offset, BluetoothGattCharacteristic characteristic) {
-            super.onCharacteristicReadRequest(device, requestId, offset, characteristic);
-            Log.i(TAG, "onCharacteristicReadRequest " + characteristic.getUuid().toString());
-
-            if (Constants.Name_Characteristic.getUuid().equals(characteristic.getUuid())) {
-                try {
-                    mBluetoothGattServer.sendResponse(device,
-                            requestId,
-                            BluetoothGatt.GATT_SUCCESS,
-                            0,
-                            name.getBytes("UTF-8"));
-                } catch (UnsupportedEncodingException e) {
-                    e.printStackTrace();
-                }
-            }
-
-            if (Constants.Transfer_Characteristic.getUuid().equals(characteristic.getUuid())) {
-                if (imageToSend != null) {
-                    ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-                    imageToSend.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream);
-                    byte[] b = byteArrayOutputStream.toByteArray();
-                    byte[] bytesToSend = new byte[20];
-                    int currentIndex = 0;
-                    int finalIndex = b.length - 1;
-                    while (currentIndex + 20 < finalIndex) {
-                        bytesToSend = Arrays.copyOfRange(b, currentIndex, currentIndex + 20);
-                        transferCharacteristic.setValue(bytesToSend);
-                        mBluetoothGattServer.notifyCharacteristicChanged(device, transferCharacteristic, true);
-                    }
-                    bytesToSend = Arrays.copyOfRange(b, currentIndex, finalIndex);
-                    transferCharacteristic.setValue(bytesToSend);
-                    mBluetoothGattServer.notifyCharacteristicChanged(device, transferCharacteristic, true);
-                    transferCharacteristic.setValue(Constants.EOM.getBytes());
-                    mBluetoothGattServer.notifyCharacteristicChanged(device, transferCharacteristic, false);
-                } else {
-                    transferCharacteristic.setValue(Constants.EOM.getBytes());
-                    mBluetoothGattServer.notifyCharacteristicChanged(device, transferCharacteristic, false);
-                }
-
-            }
-
-            /*
-             * Unless the characteristic supports WRITE_NO_RESPONSE,
-             * always send a response back for any request.
-             */
-            mBluetoothGattServer.sendResponse(device,
-                    requestId,
-                    BluetoothGatt.GATT_FAILURE,
-                    0,
-                    null);
-        }
-
 
         @Override
         public void onDescriptorWriteRequest(BluetoothDevice device, int requestId, BluetoothGattDescriptor descriptor, boolean preparedWrite, boolean responseNeeded, int offset, byte[] value) {
