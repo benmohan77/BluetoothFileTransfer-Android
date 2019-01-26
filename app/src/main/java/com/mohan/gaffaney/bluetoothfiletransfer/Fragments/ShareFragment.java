@@ -42,6 +42,9 @@ import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 import java.util.UUID;
 
+/**
+ * Fragment that handles the sharing of an image file and requests for sharing.
+ */
 public class ShareFragment extends Fragment {
     boolean startTransmissionOnResult =false;
     private static final int READ_REQUEST_CODE = 42;
@@ -54,6 +57,11 @@ public class ShareFragment extends Fragment {
     private final ScannerFragment scannerFragment = new ScannerFragment();
     Handler mHandler;
 
+    /**
+     * Sets the bluetooth manager and adapter for the fragment, receives them from the main activity.
+     * @param bluetoothManager
+     * @param bluetoothAdapter
+     */
     public void setBluetoothServices(BluetoothManager bluetoothManager, BluetoothAdapter bluetoothAdapter){
         this.mBluetoothAdapter = bluetoothAdapter;
         this.mBluetoothManager = bluetoothManager;
@@ -73,6 +81,7 @@ public class ShareFragment extends Fragment {
         startAdvertising();
     }
 
+    // Sets the click listeners for the buttons on the fragment.
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState){
         View rootView = inflater.inflate(R.layout.share_fragment, container, false);
@@ -90,12 +99,13 @@ public class ShareFragment extends Fragment {
         shareButton.setOnClickListener(new View.OnClickListener() {
               @Override
               public void onClick(View view) {
-                  getActivity().getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container, scannerFragment).commit();
+                  getActivity().getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container, scannerFragment).addToBackStack(null).commit();
               }
           });
         return rootView;
     }
 
+    //Opens the image selector.
     public void selectImage(){
         Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
 
@@ -133,7 +143,9 @@ public class ShareFragment extends Fragment {
     private BluetoothGattCharacteristic nameCharacteristic;
 
 
-
+    /**
+     * Initializes the GATT server. This is used to broadcast and receive data using BLE.
+     */
     private void initGattServer(){
         BluetoothGattService service =new BluetoothGattService(Constants.Service_UUID.getUuid(), BluetoothGattService.SERVICE_TYPE_PRIMARY);
 
@@ -156,8 +168,8 @@ public class ShareFragment extends Fragment {
         mBluetoothGattServer.addService(service);
     }
 
-    /**
-     * Starts BLE Advertising by starting {@code AdvertiserService}.
+    /***
+     * Starts advertising over BLE for other devices scanning for the same Service ID.
      */
     private void startAdvertising() {
         BluetoothLeAdvertiser advertiser =
@@ -204,10 +216,17 @@ public class ShareFragment extends Fragment {
         advertiser.startAdvertising(settings, data, advertisingCallback);
     }
 
+    /**
+     * Sets the image to send over BLE
+     * @param bitmap
+     */
     public void setImageToSend(Bitmap bitmap){
         this.imageToSend = bitmap;
     }
 
+    /**
+     * Gatt server callback that handles state changes for the sharing Gatt server.
+     */
     private BluetoothGattServerCallback mGattServerCallback = new BluetoothGattServerCallback() {
         int currentIndex;
         byte[] bytesToSend;
@@ -232,6 +251,10 @@ public class ShareFragment extends Fragment {
             }
         }
 
+        /**
+         * Starts the transmission of the image file, by dividing it into 20 byte chunks. This process is very slow.
+         * @param device
+         */
         public void startTransmission(BluetoothDevice device){
             finalIndex = 0;
             currentIndex = 0;
@@ -251,6 +274,16 @@ public class ShareFragment extends Fragment {
             currentIndex += 20;
         }
 
+        /**
+         * Handles write requests and provides users a prompt.
+         * @param device
+         * @param requestId
+         * @param characteristic
+         * @param preparedWrite
+         * @param responseNeeded
+         * @param offset
+         * @param value
+         */
         @Override
         public void onCharacteristicWriteRequest(final BluetoothDevice device, int requestId, BluetoothGattCharacteristic characteristic, boolean preparedWrite, boolean responseNeeded, int offset, final byte[] value) {
             Log.e("BLE", "WRITE REQUESTED FROM CENTRAL");
@@ -287,31 +320,14 @@ public class ShareFragment extends Fragment {
                         builder.show();
                     }
                 });
-//                if(imageToSend != null){
-//                    finalIndex = 0;
-//                    currentIndex = 0;
-//                    finalSent = false;
-//                    needToSendEOM = false;
-//                    byteArrayOutputStream = new ByteArrayOutputStream();
-//                    imageToSend.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream );
-//                    b = byteArrayOutputStream.toByteArray();
-//                    bytesToSend = new byte[20];
-//                    finalIndex = b.length - 1;
-//                    currentIndex = 0;
-//
-//                    bytesToSend = Arrays.copyOfRange(b, currentIndex, currentIndex + 20);
-//
-//                    transferCharacteristic.setValue(bytesToSend);
-//                    mBluetoothGattServer.notifyCharacteristicChanged(device, transferCharacteristic, true);
-//                    currentIndex += 20;
-//                } else{
-//                    transferCharacteristic.setValue(Constants.EOM.getBytes());
-//                    mBluetoothGattServer.notifyCharacteristicChanged(device, transferCharacteristic, false);
-//                }
             }
         }
 
-
+        /**
+         * Function that handles when a chunk of data is sent, manages how much of the image is left to send.
+         * @param device
+         * @param status
+         */
         @Override
         public void onNotificationSent(BluetoothDevice device, int status){
             super.onNotificationSent(device, status);
@@ -336,9 +352,8 @@ public class ShareFragment extends Fragment {
         @Override
         public void onDescriptorWriteRequest(BluetoothDevice device, int requestId, BluetoothGattDescriptor descriptor, boolean preparedWrite, boolean responseNeeded, int offset, byte[] value) {
 
-            // now tell the connected device that this was all successfull
+            // now tell the connected device that this was all successful
             mBluetoothGattServer.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, offset, value);
-
         }
     };
 }

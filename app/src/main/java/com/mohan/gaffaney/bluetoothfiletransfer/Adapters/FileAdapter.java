@@ -13,6 +13,7 @@ import com.mohan.gaffaney.bluetoothfiletransfer.R;
 
 import java.util.List;
 
+//Unused FileAdapter. To be implemented later.
 public class FileAdapter extends ArrayAdapter<FileItem> {
 
     public FileAdapter(Context context, int resource, List<FileItem> items){

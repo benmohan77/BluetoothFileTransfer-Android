@@ -73,11 +73,19 @@ public class ScannerFragment extends ListFragment {
         // Required empty public constructor
     }
 
+    /**
+     * Must be called before start scanning. Sets the bluetoothAdapter for the fragment.
+     * @param btAdapter
+     */
     public void setBluetoothAdapter(BluetoothAdapter btAdapter){
         this.mBluetoothAdapter = btAdapter;
         mBluetoothLeScanner = mBluetoothAdapter.getBluetoothLeScanner();
     }
 
+    /**
+     * Initializes all of the adapters and handlers.
+     * @param savedInstanceState
+     */
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -86,6 +94,7 @@ public class ScannerFragment extends ListFragment {
         mHandler = new Handler();
         outputStream = new ByteArrayOutputStream();
     }
+
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -135,7 +144,7 @@ public class ScannerFragment extends ListFragment {
             mScanCallback = new SampleScanCallback();
             mBluetoothLeScanner.startScan(buildScanFilters(), buildScanSettings(), mScanCallback);
 
-            String toastText = "TOAST" + " "
+            String toastText = "Scanning for" + " "
                     + TimeUnit.SECONDS.convert(SCAN_PERIOD, TimeUnit.MILLISECONDS) + " "
                     + "SECONDS";
             Toast.makeText(getActivity(), toastText, Toast.LENGTH_LONG).show();
@@ -224,6 +233,9 @@ public class ScannerFragment extends ListFragment {
 
     }
 
+    /**
+     * Callback that handles state changes for the GATT
+     */
     private BluetoothGattCallback mGattCallback = new BluetoothGattCallback() {
 
         private int byteCount;
@@ -285,16 +297,6 @@ public class ScannerFragment extends ListFragment {
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 BluetoothGattService service = gatt.getService(Constants.Service_UUID.getUuid());
                 if (service != null) {
-//                    BluetoothGattCharacteristic nameCharacteristic = service.getCharacteristic(Constants.Name_Characteristic.getUuid());
-//                    nameCharacteristic.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE);
-//                    BluetoothGattCharacteristic transferCharacteristic = service.getCharacteristic(Constants.Transfer_Characteristic.getUuid());
-//                    gatt.setCharacteristicNotification(transferCharacteristic, true);
-//                    BluetoothGattDescriptor descriptor = transferCharacteristic.getDescriptor(UUID.fromString("00002902-0000-1000-8000-00805F9B34FB"));
-//                    descriptor.setValue(BluetoothGattDescriptor.ENABLE_INDICATION_VALUE);
-//                    gatt.writeDescriptor(descriptor);
-//                    nameCharacteristic.setValue(NAME.getBytes());
-//                    gatt.writeCharacteristic(nameCharacteristic);
-//                    gatt.readCharacteristic(nameCharacteristic);
                     BluetoothGattCharacteristic nameCharacteristic = service.getCharacteristic(Constants.Name_Characteristic.getUuid());
                     nameCharacteristic.setValue(NAME.getBytes());
 
